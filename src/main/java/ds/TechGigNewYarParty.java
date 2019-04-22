@@ -1,6 +1,9 @@
 package ds;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
 class TechGigNewYarParty {
 
@@ -13,24 +16,24 @@ class TechGigNewYarParty {
 
     public Result findMaxSum() {
         if (input.length == 1) {
-            return new Result(input[0], new ArrayList<Integer>() {
+            return new Result( new ArrayList<Integer>() {
                 {
-                    add(0);
+                    add(input[0]);
                 }
             });
         }
 
         if (input.length == 2) {
             if (input[0] >= input[1]) {
-                return new Result(input[0], new ArrayList<Integer>() {
+                return new Result( new ArrayList<Integer>() {
                     {
-                        add(0);
+                        add(input[0]);
                     }
                 });
             } else {
-                return new Result(input[1], new ArrayList<Integer>() {
+                return new Result( new ArrayList<Integer>() {
                     {
-                        add(1);
+                        add(input[1]);
                     }
                 });
             }
@@ -38,7 +41,7 @@ class TechGigNewYarParty {
 
 
         for (int i = 0; i < input.length; i++) {
-            individualBestCases.add(new IndividualBestCase(input[i], i));
+            individualBestCases.add(new IndividualBestCase(input[i]));
         }
 
 
@@ -51,22 +54,22 @@ class TechGigNewYarParty {
                 .max(Comparator.comparingInt(IndividualBestCase::getMaxSum))
                 .orElse(null);
 
-        return new Result(max.getMaxSum(), max.getPathToMaxSum());
+        return new Result( max.getTrail());
     }
 }
 
 class IndividualBestCase {
     private final int baseValue;
-    private final List<Integer> pathToMaxSum;
+    private final List<Integer> trail;
     private int maxSum;
 
 
-    IndividualBestCase(int baseValue, int index) {
+    IndividualBestCase(int baseValue) {
         this.baseValue = baseValue;
         this.maxSum = baseValue;
-        this.pathToMaxSum = new ArrayList<Integer>() {
+        this.trail = new ArrayList<Integer>() {
             {
-                add(index);
+                add(baseValue);
             }
         };
     }
@@ -79,8 +82,8 @@ class IndividualBestCase {
         return maxSum;
     }
 
-    public List<Integer> getPathToMaxSum() {
-        return pathToMaxSum;
+    public List<Integer> getTrail() {
+        return trail;
     }
 
     public void updateSelfFromTrainingElement(IndividualBestCase oneBeforeAdjacentTrailingElement, IndividualBestCase adjacentTrailingElement) {
@@ -88,12 +91,12 @@ class IndividualBestCase {
         if (adjacentTrailingElement.getMaxSum()>valueWithOneBeforeAdjacent)
         {
             this.maxSum = adjacentTrailingElement.getMaxSum();
-            this.pathToMaxSum.remove(0);
-            this.pathToMaxSum.addAll(0, adjacentTrailingElement.getPathToMaxSum());
+            this.trail.remove(0);
+            this.trail.addAll(0, adjacentTrailingElement.getTrail());
         }else if (valueWithOneBeforeAdjacent > this.getBaseValue())
         {
             this.maxSum = valueWithOneBeforeAdjacent;
-            this.pathToMaxSum.addAll(0, oneBeforeAdjacentTrailingElement.getPathToMaxSum());
+            this.trail.addAll(0, oneBeforeAdjacentTrailingElement.getTrail());
         }
     }
 
@@ -101,15 +104,16 @@ class IndividualBestCase {
 
 
 class Result {
-    private int max;
-    private List<Integer> indices;
+    private List<Integer> trail;
 
-    public Result(int max, List<Integer> indices) {
-        this.max = max;
-        this.indices = indices;
+    public Result( List<Integer> trail) {
+        this.trail = trail;
     }
 
-    public String consolidate() {
-        return String.format("%d\n%s", max, indices);
+    public String consolidateReverseWay() {
+        StringBuffer resultBuffer = new StringBuffer();
+        Collections.reverse(trail);
+        trail.forEach(ticketNumber -> resultBuffer.append(ticketNumber));
+        return resultBuffer.toString();
     }
 }
