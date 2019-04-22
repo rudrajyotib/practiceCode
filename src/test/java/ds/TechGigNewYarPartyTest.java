@@ -30,9 +30,9 @@ public class TechGigNewYarPartyTest {
 
     @Test
     public void testCase4() {
-        TechGigNewYarParty techGigNewYarParty = new TechGigNewYarParty(new int[] {4,5,4,3});
+        TechGigNewYarParty techGigNewYarParty = new TechGigNewYarParty(new int[] {4,3,4,5});
         Result maxSum = techGigNewYarParty.findMaxSum();
-        assertThat(maxSum.consolidateReverseWay(), is("44") );
+        assertThat(maxSum.consolidateReverseWay(), is("53") );
     }
 
     @Test
@@ -61,5 +61,12 @@ public class TechGigNewYarPartyTest {
         TechGigNewYarParty techGigNewYarParty = new TechGigNewYarParty(new int[] {9,-9});
         Result maxSum = techGigNewYarParty.findMaxSum();
         assertThat(maxSum.consolidateReverseWay(), is("9") );
+    }
+
+    @Test
+    public void testCase9() {
+        TechGigNewYarParty techGigNewYarParty = new TechGigNewYarParty(new int[] {1,2,4,0,0,0,7,9,0,0,0,0,-1,-2,-3,100});
+        Result maxSum = techGigNewYarParty.findMaxSum();
+        assertThat(maxSum.consolidateReverseWay(), is("100941") );
     }
 }
