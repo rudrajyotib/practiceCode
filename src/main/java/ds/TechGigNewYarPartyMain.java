@@ -94,7 +94,6 @@ class TechGigNewYearParty {
 class Trail implements Comparable {
     private final List<Integer> trailElements;
 
-
     Trail(int firstElement) {
         this.trailElements = new ArrayList<Integer>() {
             {
@@ -133,8 +132,8 @@ class Trail implements Comparable {
     @Override
     public int compareTo(Object o) {
         Trail otherTrail = (Trail) o;
-        if (this.sumUp() != otherTrail.sumUp())
-            return this.sumUp() - otherTrail.sumUp();
+       // if (this.sumUp() != otherTrail.sumUp())
+       //     return this.sumUp() - otherTrail.sumUp();
         int trailLength = this.trailElements.size();
         int otherTrailLength = otherTrail.getTrailElements().size();
         int shorterLength = trailLength >= otherTrailLength ? otherTrailLength : trailLength;
