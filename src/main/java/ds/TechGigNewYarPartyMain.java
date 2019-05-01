@@ -13,11 +13,12 @@ public class TechGigNewYarPartyMain {
         int numberOfTestCases = Integer.parseInt(bufferedReader.readLine());
         StringBuilder finalResultBuilder = new StringBuilder();
         for (int i = 0; i < numberOfTestCases; i++) {
-            bufferedReader.readLine();
+            int numberOfTickets = Integer.parseInt(bufferedReader.readLine());
             String tickets = bufferedReader.readLine();
-            int[] numericTicketValues = Arrays.stream(tickets.split(" "))
+            /*int[] numericTicketValues = Arrays.stream(tickets.split(" "))
                     .mapToInt(Integer::parseInt)
-                    .toArray();
+                    .toArray();*/
+            int[] numericTicketValues=generateIntegerArray(tickets,numberOfTickets );
             TechGigNewYearParty techGigNewYearParty = new TechGigNewYearParty(numericTicketValues);
             if (i != 0) {
                 finalResultBuilder.append("\n");
@@ -25,6 +26,40 @@ public class TechGigNewYarPartyMain {
             finalResultBuilder.append(techGigNewYearParty.findMaxSum().consolidate());
         }
         System.out.println(finalResultBuilder.toString());
+    }
+
+    private static int[] generateIntegerArray(String input, int numberOfInputs)
+    {
+        int[] tickets=new int[numberOfInputs];
+        int ticketIndex=0;
+        for (int i=0;i<numberOfInputs;i++)
+        {
+            CharSequence charSequence=findStrength(input, ticketIndex);
+            ticketIndex=ticketIndex+charSequence.length()+1;
+            tickets[i]=numerifyStrength(charSequence);
+        }
+        return tickets;
+    }
+
+    private static int numerifyStrength(CharSequence charSequence)
+    {
+        int length = charSequence.length();
+        int strength = 0;
+        for (int i=0;i<charSequence.length();i++)
+        {
+            strength = (int)(Character.getNumericValue(charSequence.charAt(i))*Math.pow(10,length-i-1) )+ strength;
+        }
+        return strength;
+    }
+
+    private static CharSequence findStrength(String input, int startIndex)
+    {
+        int stopAt = startIndex;
+        while ( (stopAt<input.length()) && !Character.isWhitespace(input.charAt(stopAt)) )
+        {
+            ++stopAt;
+        }
+        return input.subSequence(startIndex, stopAt);
     }
 
 }
