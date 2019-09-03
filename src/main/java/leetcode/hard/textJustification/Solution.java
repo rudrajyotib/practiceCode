@@ -2,7 +2,6 @@ package leetcode.hard.textJustification;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.IntStream;
 
 public class Solution
 {
@@ -52,9 +51,11 @@ public class Solution
         int additionalSpacesToLeftJustify = 0;
         if (!((endIndex + 1) == words.length))
         {
-            int emptySpaces = maxWidth - (IntStream.range(startIndex, endIndex + 1)
-                                              .map(operand -> words[operand].length())
-                                              .sum());
+            int emptySpaces = maxWidth;
+            for (int i = startIndex; i <= endIndex; i++)
+            {
+                emptySpaces -= words[i].length();
+            }
             int numberOfGaps = endIndex - startIndex;
             minimumNumberOfSpaces = (numberOfGaps > 0) ? emptySpaces / numberOfGaps : 0;
             additionalSpacesToLeftJustify = (numberOfGaps > 0) ? emptySpaces % numberOfGaps : 0;
