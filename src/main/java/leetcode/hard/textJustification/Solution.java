@@ -1,7 +1,6 @@
 package leetcode.hard.textJustification;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -47,7 +46,7 @@ public class Solution
     private String generateLine(int maxWidth, String[] words, int startIndex, int endIndex)
     {
         char[] result = new char[maxWidth];
-        Arrays.fill(result, ' ');
+        //Arrays.fill(result, ' ');
         int counterPositionInResult = words[startIndex].length();
         int minimumNumberOfSpaces;
         int additionalSpacesToLeftJustify = 0;
@@ -70,11 +69,13 @@ public class Solution
         {
             int emptySpacesToAdd;
             emptySpacesToAdd = minimumNumberOfSpaces + ((additionalSpacesToLeftJustify > 0) ? 1 : 0);
+            fillWithEmptySpaces(result, counterPositionInResult, emptySpacesToAdd);
             counterPositionInResult += emptySpacesToAdd;
             arrayCopy(result, counterPositionInResult, words[i]);
             --additionalSpacesToLeftJustify;
             counterPositionInResult += words[i].length();
         }
+        fillRemainingWithEmptySoaces(result, counterPositionInResult);
         return String.copyValueOf(result);
     }
 
@@ -84,6 +85,23 @@ public class Solution
         for (int i = 0; i < targetLength; i++)
         {
             targetArray[startPosition + i] = wordToCopy.charAt(i);
+        }
+    }
+
+    private void fillWithEmptySpaces(char[] targetArray, int startPosition, int length)
+    {
+        for (int i = 0; i < length; i++)
+        {
+            targetArray[startPosition + i] = ' ';
+        }
+    }
+
+    private void fillRemainingWithEmptySoaces(char[] targetArray, int startPosition)
+    {
+        while (startPosition < targetArray.length)
+        {
+            targetArray[startPosition] = ' ';
+            ++startPosition;
         }
     }
 }
