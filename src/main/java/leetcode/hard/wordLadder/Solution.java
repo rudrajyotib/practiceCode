@@ -1,127 +1,123 @@
 package leetcode.hard.wordLadder;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class Solution
 {
-    private Map<String, Vertex> vertexMap = new HashMap<>();
-    private SingleLinkedList<SingleLinkedList<String>> results = new SingleLinkedList<>();
-    private int shortestTransitionLength = 0;
+    private int target;
+    private List<SingleLinkedList<Integer>> allPathsToDestination = new ArrayList<>();
+    private int minimumDistanceSolution = -1;
+    private int inputLength;
+    private int[] minimumDistanceToReachVertex;
+    private boolean[] startingPoint;
+    private int[][] matrix;
 
     List<List<String>> findLadders(String beginWord, String endWord, List<String> wordList)
     {
+        inputLength = wordList.size();
+        minimumDistanceToReachVertex = new int[wordList.size()];
+        startingPoint = new boolean[wordList.size()];
         if (!isValidProblem(beginWord, endWord, wordList))
         {
             return new ArrayList<>();
         }
+        matrix = new int[inputLength][inputLength];
 
-        for (int i = 0; i < wordList.size(); i++)
+        for (int i = 0; i < inputLength; i++)
         {
-            String word = wordList.get(i);
-            for (int j = i; j < wordList.size(); j++)
+            for (int j = i + 1; j < inputLength; j++)
             {
-                if (makesPair(word, wordList.get(j)))
+                if (!(makesPair(wordList.get(i), wordList.get(j))))
                 {
-                    String pairedWord = wordList.get(j);
-                    if (vertexMap.containsKey(word))
+                    matrix[i][j] = -1;
+                    matrix[j][i] = -1;
+                }
+            }
+            matrix[i][i] = -1;
+        }
+
+        for (int i = 0; i < inputLength; i++)
+        {
+            if (startingPoint[i])
+            {
+                if (i == target)
+                {
+                    SingleLinkedList<Integer> singlePointResult = new SingleLinkedList<>();
+                    singlePointResult.add(i);
+                    allPathsToDestination.add(singlePointResult);
+                    if (minimumDistanceSolution != 1)
                     {
-                        vertexMap.get(word).addToEdge(pairedWord);
+                        allPathsToDestination.clear();
                     }
-                    else
-                    {
-                        Vertex v1 = new Vertex(word);
-                        v1.addToEdge(pairedWord);
-                        vertexMap.put(word, v1);
-                    }
-                    if (vertexMap.containsKey(pairedWord))
-                    {
-                        vertexMap.get(pairedWord).addToEdge(word);
-                    }
-                    else
-                    {
-                        Vertex v2 = new Vertex(pairedWord);
-                        v2.addToEdge(word);
-                        vertexMap.put(pairedWord, v2);
-                    }
+                    allPathsToDestination.add(singlePointResult);
+                    minimumDistanceSolution = 1;
+                    continue;
+                }
+
+                {
+                    SingleLinkedList<Integer> possibleSolution = new SingleLinkedList<>();
+                    possibleSolution.add(i);
+                    minimumDistanceToReachVertex[i] = 1;
+                    transitionAsFarAsPossible(i, possibleSolution);
                 }
             }
         }
 
-        vertexMap
-            .forEach((s, vertex) -> {
-                if (makesPair(s, beginWord))
-                {
-                    SingleLinkedList<String> transition = new SingleLinkedList<String>()
-                    {
-                        {
-                            add(beginWord);
-                            add(s);
-                        }
-                    };
-                    transitionAsFarAsPossible(s, endWord, transition);
-                }
-            });
-
-        if (results.size == 0)
-        {
-            return new ArrayList<>();
-        }
-        return results.toList()
+        return allPathsToDestination
             .stream()
-            .map(SingleLinkedList::toList)
+            .map(integerSingleLinkedList -> {
+                List<String> path = new ArrayList<>(integerSingleLinkedList.size + 1);
+                LinkNode<Integer> tempNode = integerSingleLinkedList.head;
+                path.add(beginWord);
+                while (tempNode != null)
+                {
+                    path.add(wordList.get(tempNode.value));
+                    tempNode = tempNode.next;
+                }
+                return path;
+            })
             .collect(Collectors.toList());
     }
 
-    private void transitionAsFarAsPossible(String beginWord, String endWord, SingleLinkedList<String> wordsVisitedInTransition)
+    private void transitionAsFarAsPossible(int beginIndex, SingleLinkedList<Integer> pathToSolution)
     {
-        //who am i
-        //am i destination
-        if (endWord.equals(beginWord))
+        if (beginIndex == target)
         {
-            int transitionLength = wordsVisitedInTransition.size;
-            if (results.size == 0)
+            if (allPathsToDestination.size() == 0 || (minimumDistanceSolution == pathToSolution.size))
             {
-                results.add(wordsVisitedInTransition);
-                shortestTransitionLength = transitionLength;
+                allPathsToDestination.add(pathToSolution);
+                minimumDistanceSolution = pathToSolution.size;
                 return;
             }
-            if (transitionLength > shortestTransitionLength)
+            else if ((minimumDistanceSolution > pathToSolution.size))
             {
+                allPathsToDestination.clear();
+                allPathsToDestination.add(pathToSolution);
+                minimumDistanceSolution = pathToSolution.size;
                 return;
             }
-            if (transitionLength < shortestTransitionLength)
-            {
-                shortestTransitionLength = transitionLength;
-                results.clear();
-                results.add(wordsVisitedInTransition);
-                return;
-            }
-            results.add(wordsVisitedInTransition);
+            minimumDistanceSolution = pathToSolution.size;
             return;
         }
-        if (shortestTransitionLength != 0 && wordsVisitedInTransition.size >= shortestTransitionLength)
+        if ((allPathsToDestination.size() > 0 && (minimumDistanceSolution <= pathToSolution.size)))
         {
             return;
         }
-        //my edges
-        vertexMap.get(beginWord)
-            .getEdges()
-            .forEachRemaining(s -> {
-                if (!wordsVisitedInTransition.contains(s))
+        for (int i = 0; i < inputLength; i++)
+        {
+            if (matrix[beginIndex][i] == 0)
+            {
+                if ((minimumDistanceToReachVertex[i] == 0) || (minimumDistanceToReachVertex[i] > pathToSolution.size))
                 {
-                    SingleLinkedList<String> visitedTransitions = new SingleLinkedList<>(wordsVisitedInTransition);
-                    visitedTransitions.add(s);
-                    transitionAsFarAsPossible(s, endWord, visitedTransitions);
+                    SingleLinkedList<Integer> updatedPath = new SingleLinkedList<>(pathToSolution);
+                    updatedPath.add(i);
+                    minimumDistanceToReachVertex[i] = updatedPath.size;
+                    transitionAsFarAsPossible(i, updatedPath);
                 }
-            });
-        //iterate over my edges, if not already traversed, clone visited set and add me to the set and pass on recursion.
+            }
+        }
     }
 
     private boolean isValidProblem(String beginWord, String endWord, List<String> wordList)
@@ -132,6 +128,20 @@ public class Solution
         }
         boolean pairAvailable = false;
         boolean endWordIsInDictionary = false;
+        int inputSize = wordList.size();
+        for (int i = 0; i < inputSize; i++)
+        {
+            if (makesPair(wordList.get(i), beginWord))
+            {
+                pairAvailable = true;
+                startingPoint[i] = true;
+            }
+            if (wordList.get(i).equals(endWord))
+            {
+                endWordIsInDictionary = true;
+                target = i;
+            }
+        }
         for (String word : wordList)
         {
             if (makesPair(word, beginWord))
@@ -159,65 +169,28 @@ public class Solution
         return (1 == mismatchedLetterCount);
     }
 
-    private static class Vertex
-    {
-        private final String value;
-        private List<String> edges;
-
-        Vertex(String value)
-        {
-            this.value = value;
-            this.edges = new LinkedList<>();
-        }
-
-        void addToEdge(String connectedWord)
-        {
-            edges.add(connectedWord);
-        }
-
-        Iterator<String> getEdges()
-        {
-            return edges.iterator();
-        }
-
-        @Override
-        public boolean equals(Object o)
-        {
-            if (this == o) { return true; }
-            if (!(o instanceof Vertex)) { return false; }
-            Vertex vertex = (Vertex) o;
-            return Objects.equals(value, vertex.value);
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return Objects.hash(value);
-        }
-    }
-
     private static class SingleLinkedList<T>
     {
         private int size = 0;
-        private LinkNode<T> head;
-        private LinkNode<T> tail;
+        private Solution.LinkNode<T> head;
+        private Solution.LinkNode<T> tail;
 
         SingleLinkedList()
         {
         }
 
         @SuppressWarnings("CopyConstructorMissesField")
-        SingleLinkedList(SingleLinkedList<T> source)
+        SingleLinkedList(Solution.SingleLinkedList<T> source)
         {
             if (source != null && source.head != null)
             {
-                head = tail = new LinkNode<>(source.head.value);
-                LinkNode<T> tempNode = source.head;
+                head = tail = new Solution.LinkNode<>(source.head.value);
+                Solution.LinkNode<T> tempNode = source.head;
                 ++size;
                 while (tempNode.hasNext())
                 {
                     //noinspection unchecked
-                    tail.next = new LinkNode(tempNode.next.value);
+                    tail.next = new Solution.LinkNode(tempNode.next.value);
                     tail = tail.next;
                     tempNode = tempNode.next;
                     ++size;
@@ -230,11 +203,11 @@ public class Solution
             if (size == 0)
             {
                 //noinspection unchecked
-                head = tail = new LinkNode(value);
+                head = tail = new Solution.LinkNode(value);
             }
             else
             {
-                @SuppressWarnings("unchecked") LinkNode linkNode = new LinkNode(value);
+                @SuppressWarnings("unchecked") Solution.LinkNode linkNode = new Solution.LinkNode(value);
                 //noinspection unchecked
                 tail.next = linkNode;
                 //noinspection unchecked
@@ -242,48 +215,11 @@ public class Solution
             }
             ++size;
         }
-
-        void clear()
-        {
-            head = tail = null;
-            size = 0;
-        }
-
-        boolean contains(T toCompare)
-        {
-            LinkNode<T> node = head;
-            while (node != null)
-            {
-                if (Objects.equals(node.value, toCompare))
-                {
-                    return true;
-                }
-                node = node.next;
-            }
-            return false;
-        }
-
-        List<T> toList()
-        {
-            if (size == 0)
-            {
-                return new ArrayList<>();
-            }
-            List<T> list = new ArrayList<>();
-            LinkNode<T> tempNode = head;
-            list.add(head.value);
-            while (tempNode.hasNext())
-            {
-                list.add(tempNode.next.value);
-                tempNode = tempNode.next;
-            }
-            return list;
-        }
     }
 
     private static class LinkNode<T>
     {
-        private LinkNode<T> next;
+        private Solution.LinkNode<T> next;
         private T value;
 
         LinkNode(T value)
