@@ -1,5 +1,7 @@
 package leetcode.hard.wordLadder;
 
+import java.time.Duration;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -13,10 +15,16 @@ public class Solution
     private int inputLength;
     private boolean[] startingPoint;
     private int[][] matrix;
+    private ZonedDateTime startDateTime = ZonedDateTime.now();
 
     List<List<String>> findLadders(String beginWord, String endWord, List<String> wordList)
     {
         return solveAdjacencyMatrixBfs(beginWord, endWord, wordList);
+    }
+
+    private void report(String event)
+    {
+        System.out.println(event + "::" + Duration.between(startDateTime, ZonedDateTime.now()).toMillis());
     }
 
     private List<List<String>> solveAdjacencyMatrixBfs(String beginWord, String endWord, List<String> wordList)
@@ -28,6 +36,7 @@ public class Solution
             return new ArrayList<>();
         }
         matrix = new int[inputLength][inputLength];
+        report("Validity Check");
 
         for (int i = 0; i < inputLength; i++)
         {
@@ -41,6 +50,8 @@ public class Solution
             }
             matrix[i][i] = -1;
         }
+
+        report("Create matrix");
 
         for (int i = 0; i < inputLength; i++)
         {
@@ -62,6 +73,7 @@ public class Solution
 
                 {
                     transitionAsFarAsPossibleBfs(i);
+                    report("BFS Transition");
                 }
             }
         }
@@ -101,7 +113,7 @@ public class Solution
             }
             if ((pathToReach[presentVertex].traceSize >= minimumDistanceSolution) && (minimumDistanceSolution > -1))
             {
-                continue;
+                traversalPathQueue.clear();
             }
             if (pathToReach[target] != null && pathToReach[target].traceSize <= pathToReach[presentVertex].traceSize)
             {
