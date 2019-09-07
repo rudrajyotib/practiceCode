@@ -1,6 +1,7 @@
 package leetcode.hard.wordLadder;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -10,14 +11,17 @@ public class Solution
     private List<SingleLinkedList<Integer>> allPathsToDestination = new ArrayList<>();
     private int minimumDistanceSolution = -1;
     private int inputLength;
-    private int[] minimumDistanceToReachVertex;
     private boolean[] startingPoint;
     private int[][] matrix;
 
     List<List<String>> findLadders(String beginWord, String endWord, List<String> wordList)
     {
+        return solveAdjacencyMatrixBfs(beginWord, endWord, wordList);
+    }
+
+    private List<List<String>> solveAdjacencyMatrixBfs(String beginWord, String endWord, List<String> wordList)
+    {
         inputLength = wordList.size();
-        minimumDistanceToReachVertex = new int[wordList.size()];
         startingPoint = new boolean[wordList.size()];
         if (!isValidProblem(beginWord, endWord, wordList))
         {
@@ -57,10 +61,7 @@ public class Solution
                 }
 
                 {
-                    SingleLinkedList<Integer> possibleSolution = new SingleLinkedList<>();
-                    possibleSolution.add(i);
-                    minimumDistanceToReachVertex[i] = 1;
-                    transitionAsFarAsPossible(i, possibleSolution);
+                    transitionAsFarAsPossibleBfs(i);
                 }
             }
         }
@@ -81,44 +82,76 @@ public class Solution
             .collect(Collectors.toList());
     }
 
-    private void transitionAsFarAsPossible(int beginIndex, SingleLinkedList<Integer> pathToSolution)
+    private void transitionAsFarAsPossibleBfs(int beginIndex)
     {
-        if (beginIndex == target)
+        SingleLinkedList<Integer> traversalPathQueue = new SingleLinkedList<>();
+        @SuppressWarnings("unchecked") PathTrace<Integer>[] pathToReach = new PathTrace[inputLength];
+        traversalPathQueue.add(beginIndex);
+        PathTrace<Integer> routeToFirstVertex = new PathTrace<>(beginIndex);
+        routeToFirstVertex.initialiseSelf();
+        pathToReach[beginIndex] = routeToFirstVertex;
+        int[][] localMatrix = clone2dSquareArray(matrix);
+        while (traversalPathQueue.size > 0)
         {
-            if (allPathsToDestination.size() == 0 || (minimumDistanceSolution == pathToSolution.size))
+            Integer presentVertex = traversalPathQueue.poll();
+            if (presentVertex == target)
             {
-                allPathsToDestination.add(pathToSolution);
-                minimumDistanceSolution = pathToSolution.size;
-                return;
+                traversalPathQueue.clear();
+                continue;
             }
-            else if ((minimumDistanceSolution > pathToSolution.size))
+            if ((pathToReach[presentVertex].traceSize >= minimumDistanceSolution) && (minimumDistanceSolution > -1))
             {
-                allPathsToDestination.clear();
-                allPathsToDestination.add(pathToSolution);
-                minimumDistanceSolution = pathToSolution.size;
-                return;
+                continue;
             }
-            minimumDistanceSolution = pathToSolution.size;
-            return;
-        }
-        if ((allPathsToDestination.size() > 0 && (minimumDistanceSolution <= pathToSolution.size)))
-        {
-            return;
-        }
-        for (int i = 0; i < inputLength; i++)
-        {
-            if (matrix[beginIndex][i] == 0)
+            if (pathToReach[target] != null && pathToReach[target].traceSize <= pathToReach[presentVertex].traceSize)
             {
-                if ((minimumDistanceToReachVertex[i] == 0) || (minimumDistanceToReachVertex[i] > pathToSolution.size))
+                continue;
+            }
+            for (int i = 0; i < inputLength; i++)
+            {
+                int nextVertex = localMatrix[presentVertex][i];
+                if (nextVertex == -1)
                 {
-                    SingleLinkedList<Integer> updatedPath = new SingleLinkedList<>(pathToSolution);
-                    updatedPath.add(i);
-                    minimumDistanceToReachVertex[i] = updatedPath.size;
-                    transitionAsFarAsPossible(i, updatedPath);
+                    continue;
+                }
+                localMatrix[presentVertex][i] = -1;
+                localMatrix[i][presentVertex] = -1;
+                if (pathToReach[i] == null)
+                {
+                    PathTrace<Integer> pathToReachNextVertex = new PathTrace<>(i);
+                    pathToReachNextVertex.addTrace(pathToReach[presentVertex]);
+                    pathToReach[i] = pathToReachNextVertex;
+                    traversalPathQueue.add(i);
+                }
+                else
+                {
+                    if (pathToReach[i].isTraceAcceptable(pathToReach[presentVertex]))
+                    {
+                        pathToReach[i].addTrace(pathToReach[presentVertex]);
+                        traversalPathQueue.add(i);
+                    }
                 }
             }
         }
+        if (pathToReach[target] != null)
+        {
+            if ((minimumDistanceSolution == -1) || (pathToReach[target].traceSize == minimumDistanceSolution))
+            {
+                allPathsToDestination.addAll(pathToReach[target].listOfTraces);
+                minimumDistanceSolution = pathToReach[target].traceSize;
+                return;
+            }
+            if (pathToReach[target].traceSize < minimumDistanceSolution)
+            {
+                minimumDistanceSolution = pathToReach[target].traceSize;
+                allPathsToDestination.clear();
+                allPathsToDestination.addAll(pathToReach[target].listOfTraces);
+                minimumDistanceSolution = pathToReach[target].traceSize;
+            }
+        }
     }
+
+
 
     private boolean isValidProblem(String beginWord, String endWord, List<String> wordList)
     {
@@ -169,6 +202,16 @@ public class Solution
         return (1 == mismatchedLetterCount);
     }
 
+    private int[][] clone2dSquareArray(int[][] baseArray)
+    {
+        int[][] result = new int[baseArray.length][baseArray.length];
+        for (int i = 0; i < baseArray.length; i++)
+        {
+            System.arraycopy(baseArray[i], 0, result[i], 0, baseArray.length);
+        }
+        return result;
+    }
+
     private static class SingleLinkedList<T>
     {
         private int size = 0;
@@ -198,6 +241,12 @@ public class Solution
             }
         }
 
+        void clear()
+        {
+            size = 0;
+            head = tail = null;
+        }
+
         void add(T value)
         {
             if (size == 0)
@@ -215,6 +264,26 @@ public class Solution
             }
             ++size;
         }
+
+        T poll()
+        {
+            if (size == 0)
+            {
+                return null;
+            }
+            if (size == 1)
+            {
+                T value = head.value;
+                head = tail = null;
+                size = 0;
+                return value;
+            }
+            T value = head.value;
+            head = head.next;
+            --size;
+            return value;
+        }
+
     }
 
     private static class LinkNode<T>
@@ -230,6 +299,61 @@ public class Solution
         boolean hasNext()
         {
             return next != null;
+        }
+    }
+
+    private static class PathTrace<T>
+    {
+        private List<SingleLinkedList<T>> listOfTraces;
+        private T identity;
+        private int traceSize = -1;
+
+        PathTrace(T identity)
+        {
+            this.identity = identity;
+            listOfTraces = new LinkedList<>();
+        }
+
+        boolean isTraceAcceptable(PathTrace<T> trace)
+        {
+            if (traceSize == -1)
+            {
+                return true;
+            }
+            return trace.traceSize < traceSize;
+        }
+
+        void initialiseSelf()
+        {
+            SingleLinkedList<T> selfPath = new SingleLinkedList<>();
+            selfPath.add(identity);
+            listOfTraces.add(selfPath);
+            traceSize = 1;
+        }
+
+        void addTrace(PathTrace<T> trace)
+        {
+            if ((trace.traceSize + 1 < traceSize) || (traceSize == -1))
+            {
+                listOfTraces.clear();
+                copyTrace(trace);
+                return;
+            }
+            if (trace.traceSize + 1 == traceSize)
+            {
+                copyTrace(trace);
+            }
+        }
+
+        private void copyTrace(PathTrace<T> trace)
+        {
+            for (SingleLinkedList<T> singleTrace : trace.listOfTraces)
+            {
+                SingleLinkedList<T> traceCopy = new SingleLinkedList<>(singleTrace);
+                traceCopy.add(identity);
+                listOfTraces.add(traceCopy);
+            }
+            traceSize = trace.traceSize + 1;
         }
     }
 }
