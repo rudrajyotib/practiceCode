@@ -1,10 +1,11 @@
 package leetcode.hard.wordLadder;
 
-import java.time.Duration;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class Solution
@@ -13,70 +14,24 @@ public class Solution
     private List<SingleLinkedList<Integer>> allPathsToDestination = new ArrayList<>();
     private int minimumDistanceSolution = -1;
     private int inputLength;
-    private boolean[] startingPoint;
-    private int[][] matrix;
-    private ZonedDateTime startDateTime = ZonedDateTime.now();
+    private SingleLinkedList<Integer> startingPointList = new SingleLinkedList<>();
 
     List<List<String>> findLadders(String beginWord, String endWord, List<String> wordList)
     {
-        return solveAdjacencyMatrixBfs(beginWord, endWord, wordList);
-    }
-
-    private void report(String event)
-    {
-        System.out.println(event + "::" + Duration.between(startDateTime, ZonedDateTime.now()).toMillis());
-    }
-
-    private List<List<String>> solveAdjacencyMatrixBfs(String beginWord, String endWord, List<String> wordList)
-    {
         inputLength = wordList.size();
-        startingPoint = new boolean[wordList.size()];
-        if (!isValidProblem(beginWord, endWord, wordList))
+        if (!isValidProblem(beginWord, endWord, wordList, startingPointList))
         {
             return new ArrayList<>();
         }
-        matrix = new int[inputLength][inputLength];
-        report("Validity Check");
+        return solveAdjacencyListBfs(beginWord, wordList);
+    }
 
-        for (int i = 0; i < inputLength; i++)
-        {
-            for (int j = i + 1; j < inputLength; j++)
-            {
-                if (!(makesPair(wordList.get(i), wordList.get(j))))
-                {
-                    matrix[i][j] = -1;
-                    matrix[j][i] = -1;
-                }
-            }
-            matrix[i][i] = -1;
-        }
-
-        report("Create matrix");
-
-        for (int i = 0; i < inputLength; i++)
-        {
-            if (startingPoint[i])
-            {
-                if (i == target)
-                {
-                    SingleLinkedList<Integer> singlePointResult = new SingleLinkedList<>();
-                    singlePointResult.add(i);
-                    allPathsToDestination.add(singlePointResult);
-                    if (minimumDistanceSolution != 1)
-                    {
-                        allPathsToDestination.clear();
-                    }
-                    allPathsToDestination.add(singlePointResult);
-                    minimumDistanceSolution = 1;
-                    continue;
-                }
-
-                {
-                    transitionAsFarAsPossibleBfs(i);
-                    report("BFS Transition");
-                }
-            }
-        }
+    private List<List<String>> solveAdjacencyListBfs(String beginWord, List<String> wordList)
+    {
+        Map<Integer, SingleLinkedList<Integer>> adjacencyList = createAdjacencyList(wordList);
+        startingPointList
+            .iterator()
+            .forEachRemaining(integer -> transitionAsFarAsPossibleAdjacencyListBfs(integer, adjacencyList));
 
         return allPathsToDestination
             .stream()
@@ -94,7 +49,42 @@ public class Solution
             .collect(Collectors.toList());
     }
 
-    private void transitionAsFarAsPossibleBfs(int beginIndex)
+    private Map<Integer, SingleLinkedList<Integer>> createAdjacencyList(List<String> wordList)
+    {
+        Map<Integer, SingleLinkedList<Integer>> adjacencyList = new HashMap<>(wordList.size());
+        for (int i = 0; i < inputLength; i++)
+        {
+            for (int j = i + 1; j < inputLength; j++)
+            {
+                if ((makesPair(wordList.get(i), wordList.get(j))))
+                {
+                    if (adjacencyList.containsKey(i))
+                    {
+                        adjacencyList.get(i).add(j);
+                    }
+                    else
+                    {
+                        SingleLinkedList<Integer> adjacency = new SingleLinkedList<>();
+                        adjacency.add(j);
+                        adjacencyList.put(i, adjacency);
+                    }
+                    if (adjacencyList.containsKey(j))
+                    {
+                        adjacencyList.get(j).add(i);
+                    }
+                    else
+                    {
+                        SingleLinkedList<Integer> adjacency = new SingleLinkedList<>();
+                        adjacency.add(i);
+                        adjacencyList.put(j, adjacency);
+                    }
+                }
+            }
+        }
+        return adjacencyList;
+    }
+
+    private void transitionAsFarAsPossibleAdjacencyListBfs(int beginIndex, Map<Integer, SingleLinkedList<Integer>> adjacencyList)
     {
         SingleLinkedList<Integer> traversalPathQueue = new SingleLinkedList<>();
         @SuppressWarnings("unchecked") PathTrace<Integer>[] pathToReach = new PathTrace[inputLength];
@@ -102,7 +92,7 @@ public class Solution
         PathTrace<Integer> routeToFirstVertex = new PathTrace<>(beginIndex);
         routeToFirstVertex.initialiseSelf();
         pathToReach[beginIndex] = routeToFirstVertex;
-        int[][] localMatrix = clone2dSquareArray(matrix);
+        int[][] visited = new int[inputLength][inputLength];
         while (traversalPathQueue.size > 0)
         {
             Integer presentVertex = traversalPathQueue.poll();
@@ -119,28 +109,29 @@ public class Solution
             {
                 continue;
             }
-            for (int i = 0; i < inputLength; i++)
+            Iterator<Integer> iterator = adjacencyList.get(presentVertex).iterator();
+            while (iterator.hasNext())
             {
-                int nextVertex = localMatrix[presentVertex][i];
-                if (nextVertex == -1)
+                int nextVertex = iterator.next();
+                if (visited[presentVertex][nextVertex] > 0)
                 {
                     continue;
                 }
-                localMatrix[presentVertex][i] = -1;
-                localMatrix[i][presentVertex] = -1;
-                if (pathToReach[i] == null)
+                visited[presentVertex][nextVertex] = 1;
+                visited[nextVertex][presentVertex] = 1;
+                if (pathToReach[nextVertex] == null)
                 {
-                    PathTrace<Integer> pathToReachNextVertex = new PathTrace<>(i);
+                    PathTrace<Integer> pathToReachNextVertex = new PathTrace<>(nextVertex);
                     pathToReachNextVertex.addTrace(pathToReach[presentVertex]);
-                    pathToReach[i] = pathToReachNextVertex;
-                    traversalPathQueue.add(i);
+                    pathToReach[nextVertex] = pathToReachNextVertex;
+                    traversalPathQueue.add(nextVertex);
                 }
                 else
                 {
-                    if (pathToReach[i].isTraceAcceptable(pathToReach[presentVertex]))
+                    if (pathToReach[nextVertex].isTraceAcceptable(pathToReach[presentVertex]))
                     {
-                        pathToReach[i].addTrace(pathToReach[presentVertex]);
-                        traversalPathQueue.add(i);
+                        pathToReach[nextVertex].addTrace(pathToReach[presentVertex]);
+                        traversalPathQueue.add(nextVertex);
                     }
                 }
             }
@@ -163,9 +154,7 @@ public class Solution
         }
     }
 
-
-
-    private boolean isValidProblem(String beginWord, String endWord, List<String> wordList)
+    private boolean isValidProblem(String beginWord, String endWord, List<String> wordList, SingleLinkedList<Integer> startingPointList)
     {
         if ((beginWord.length() != wordList.get(0).length()) || (beginWord.length() != endWord.length()))
         {
@@ -179,23 +168,15 @@ public class Solution
             if (makesPair(wordList.get(i), beginWord))
             {
                 pairAvailable = true;
-                startingPoint[i] = true;
+                if (startingPointList != null)
+                {
+                    startingPointList.add(i);
+                }
             }
             if (wordList.get(i).equals(endWord))
             {
                 endWordIsInDictionary = true;
                 target = i;
-            }
-        }
-        for (String word : wordList)
-        {
-            if (makesPair(word, beginWord))
-            {
-                pairAvailable = true;
-            }
-            if (word.equals(endWord))
-            {
-                endWordIsInDictionary = true;
             }
         }
         return pairAvailable && endWordIsInDictionary;
@@ -214,17 +195,7 @@ public class Solution
         return (1 == mismatchedLetterCount);
     }
 
-    private int[][] clone2dSquareArray(int[][] baseArray)
-    {
-        int[][] result = new int[baseArray.length][baseArray.length];
-        for (int i = 0; i < baseArray.length; i++)
-        {
-            System.arraycopy(baseArray[i], 0, result[i], 0, baseArray.length);
-        }
-        return result;
-    }
-
-    private static class SingleLinkedList<T>
+    static class SingleLinkedList<T>
     {
         private int size = 0;
         private Solution.LinkNode<T> head;
@@ -296,6 +267,31 @@ public class Solution
             return value;
         }
 
+        Iterator<T> iterator()
+        {
+            return new Iterator<T>()
+            {
+                LinkNode<T> node = head;
+
+                @Override
+                public boolean hasNext()
+                {
+                    return node != null;
+                }
+
+                @Override
+                public T next()
+                {
+                    if (node != null)
+                    {
+                        T val = node.value;
+                        node = node.next;
+                        return val;
+                    }
+                    return null;
+                }
+            };
+        }
     }
 
     private static class LinkNode<T>
