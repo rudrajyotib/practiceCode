@@ -84,24 +84,26 @@ public class Solution
 
     private void transitionAsFarAsPossibleAdjacencyListBfs(int beginIndex, SingleLinkedList<Integer>[] adjacencyList)
     {
-        SingleLinkedList<Integer> traversalPathQueue = new SingleLinkedList<>();
+        SingleLinkedList<Integer> traversalActiveQueue = new SingleLinkedList<>();
+        SingleLinkedList<Integer> traversalPassiveQueue = new SingleLinkedList<>();
         @SuppressWarnings("unchecked") PathTrace<Integer>[] pathToReach = new PathTrace[inputLength];
-        traversalPathQueue.add(beginIndex);
+        traversalActiveQueue.add(beginIndex);
         PathTrace<Integer> routeToFirstVertex = new PathTrace<>(beginIndex);
         routeToFirstVertex.initialiseSelf();
         pathToReach[beginIndex] = routeToFirstVertex;
         boolean[][] visited = new boolean[inputLength][inputLength];
-        while (traversalPathQueue.size > 0)
+        boolean targetLocked = false;
+        while (traversalActiveQueue.size > 0)
         {
-            Integer presentVertex = traversalPathQueue.poll();
+            Integer presentVertex = traversalActiveQueue.poll();
             if (presentVertex == target)
             {
-                traversalPathQueue.clear();
+                traversalActiveQueue.clear();
                 continue;
             }
             if ((pathToReach[presentVertex].traceSize >= minimumDistanceSolution) && (minimumDistanceSolution > -1))
             {
-                traversalPathQueue.clear();
+                traversalActiveQueue.clear();
             }
             if (pathToReach[target] != null && pathToReach[target].traceSize <= pathToReach[presentVertex].traceSize)
             {
@@ -111,6 +113,10 @@ public class Solution
             while (iterator.hasNext())
             {
                 int nextVertex = iterator.next();
+                if (!targetLocked && nextVertex == target)
+                {
+                    targetLocked = true;
+                }
                 if (visited[presentVertex][nextVertex])
                 {
                     continue;
@@ -122,16 +128,27 @@ public class Solution
                     PathTrace<Integer> pathToReachNextVertex = new PathTrace<>(nextVertex);
                     pathToReachNextVertex.addTrace(pathToReach[presentVertex]);
                     pathToReach[nextVertex] = pathToReachNextVertex;
-                    traversalPathQueue.add(nextVertex);
+                    if (!targetLocked)
+                    {
+                        traversalPassiveQueue.add(nextVertex);
+                    }
                 }
                 else
                 {
                     if (pathToReach[nextVertex].isTraceAcceptable(pathToReach[presentVertex]))
                     {
                         pathToReach[nextVertex].addTrace(pathToReach[presentVertex]);
-                        traversalPathQueue.add(nextVertex);
+                        if (!targetLocked)
+                        {
+                            traversalPassiveQueue.add(nextVertex);
+                        }
                     }
                 }
+            }
+            if (traversalActiveQueue.size == 0)
+            {
+                traversalActiveQueue = traversalPassiveQueue;
+                traversalPassiveQueue = new SingleLinkedList<>();
             }
         }
         if (pathToReach[target] != null)
