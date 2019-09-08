@@ -1,11 +1,9 @@
 package leetcode.hard.wordLadder;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 public class Solution
@@ -28,7 +26,7 @@ public class Solution
 
     private List<List<String>> solveAdjacencyListBfs(String beginWord, List<String> wordList)
     {
-        Map<Integer, SingleLinkedList<Integer>> adjacencyList = createAdjacencyList(wordList);
+        SingleLinkedList<Integer>[] adjacencyList = createAdjacencyList(wordList);
         startingPointList
             .iterator()
             .forEachRemaining(integer -> transitionAsFarAsPossibleAdjacencyListBfs(integer, adjacencyList));
@@ -49,34 +47,34 @@ public class Solution
             .collect(Collectors.toList());
     }
 
-    private Map<Integer, SingleLinkedList<Integer>> createAdjacencyList(List<String> wordList)
+    private SingleLinkedList<Integer>[] createAdjacencyList(List<String> wordList)
     {
-        Map<Integer, SingleLinkedList<Integer>> adjacencyList = new HashMap<>(wordList.size());
+        @SuppressWarnings("unchecked") SingleLinkedList<Integer>[] adjacencyList = new SingleLinkedList[inputLength];
         for (int i = 0; i < inputLength; i++)
         {
             for (int j = i + 1; j < inputLength; j++)
             {
                 if ((makesPair(wordList.get(i), wordList.get(j))))
                 {
-                    if (adjacencyList.containsKey(i))
+                    if (adjacencyList[i] != null)
                     {
-                        adjacencyList.get(i).add(j);
+                        adjacencyList[i].add(j);
                     }
                     else
                     {
                         SingleLinkedList<Integer> adjacency = new SingleLinkedList<>();
                         adjacency.add(j);
-                        adjacencyList.put(i, adjacency);
+                        adjacencyList[i] = adjacency;
                     }
-                    if (adjacencyList.containsKey(j))
+                    if (adjacencyList[j] != null)
                     {
-                        adjacencyList.get(j).add(i);
+                        adjacencyList[j].add(i);
                     }
                     else
                     {
                         SingleLinkedList<Integer> adjacency = new SingleLinkedList<>();
                         adjacency.add(i);
-                        adjacencyList.put(j, adjacency);
+                        adjacencyList[j] = adjacency;
                     }
                 }
             }
@@ -84,7 +82,7 @@ public class Solution
         return adjacencyList;
     }
 
-    private void transitionAsFarAsPossibleAdjacencyListBfs(int beginIndex, Map<Integer, SingleLinkedList<Integer>> adjacencyList)
+    private void transitionAsFarAsPossibleAdjacencyListBfs(int beginIndex, SingleLinkedList<Integer>[] adjacencyList)
     {
         SingleLinkedList<Integer> traversalPathQueue = new SingleLinkedList<>();
         @SuppressWarnings("unchecked") PathTrace<Integer>[] pathToReach = new PathTrace[inputLength];
@@ -92,7 +90,7 @@ public class Solution
         PathTrace<Integer> routeToFirstVertex = new PathTrace<>(beginIndex);
         routeToFirstVertex.initialiseSelf();
         pathToReach[beginIndex] = routeToFirstVertex;
-        int[][] visited = new int[inputLength][inputLength];
+        boolean[][] visited = new boolean[inputLength][inputLength];
         while (traversalPathQueue.size > 0)
         {
             Integer presentVertex = traversalPathQueue.poll();
@@ -109,16 +107,16 @@ public class Solution
             {
                 continue;
             }
-            Iterator<Integer> iterator = adjacencyList.get(presentVertex).iterator();
+            Iterator<Integer> iterator = adjacencyList[presentVertex].iterator();
             while (iterator.hasNext())
             {
                 int nextVertex = iterator.next();
-                if (visited[presentVertex][nextVertex] > 0)
+                if (visited[presentVertex][nextVertex])
                 {
                     continue;
                 }
-                visited[presentVertex][nextVertex] = 1;
-                visited[nextVertex][presentVertex] = 1;
+                visited[presentVertex][nextVertex] = true;
+                visited[nextVertex][presentVertex] = true;
                 if (pathToReach[nextVertex] == null)
                 {
                     PathTrace<Integer> pathToReachNextVertex = new PathTrace<>(nextVertex);
