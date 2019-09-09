@@ -104,6 +104,7 @@ public class Solution
             if ((pathToReach[presentVertex].traceSize >= minimumDistanceSolution) && (minimumDistanceSolution > -1))
             {
                 traversalActiveQueue.clear();
+                continue;
             }
             if (pathToReach[target] != null && pathToReach[target].traceSize <= pathToReach[presentVertex].traceSize)
             {
