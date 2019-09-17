@@ -1,48 +1,47 @@
 package leetcode.hard.selfCrossing;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Predicate;
-
 public class Solution
 {
-    static boolean fallsInBetween(int number, int startRange, int endRange)
+    private static boolean fallsInBetween(int number, int startRange, int endRange)
     {
+        if (number == startRange || number == endRange)
+        {
+            return true;
+        }
         if (startRange > endRange)
         {
             if (number > startRange)
             {
                 return false;
             }
-            if (number < endRange)
-            {
-                return false;
-            }
+            return number >= endRange;
         }
         if (number < startRange)
         {
             return false;
         }
-        if (number > endRange)
+        return number <= endRange;
+    }
+
+    boolean isSelfCrossing(int[] x)
+    {
+        if (x == null)
         {
             return false;
         }
-        return true;
-    }
-
-    public boolean isSelfCrossing(int[] x)
-    {
+        if (x.length < 4)
+        {
+            return false;
+        }
         MovementTracker movementTracker = new MovementTracker();
-        for (int i : x)
+        /*for (int i : x)
         {
             if (movementTracker.checkIfCrossAndUpdate(i))
             {
                 return true;
             }
-        }
-        return false;
+        }*/
+        return movementTracker.check(x);
     }
 
     private static class MovementTracker
@@ -51,40 +50,63 @@ public class Solution
         int currentY = 0;
         int movementCounter = 0;
         String[] directions = new String[]{"North", "West", "South", "East"};
-        Map<String, List<String>> movementToObstractionMap = new HashMap<String, List<String>>()
+        boolean outbound = true;
+        PointDefinition[] corners = new PointDefinition[]{new PointDefinition(0, 0), null, null, null};
+        BoundaryDefinition[] boundaryDefinitions = new BoundaryDefinition[]{new BoundaryDefinition(), new BoundaryDefinition(), new BoundaryDefinition(), new BoundaryDefinition()};
+
+        boolean check(int[] steps)
         {
+            corners[1] = new PointDefinition(0, steps[0]);
+            corners[2] = new PointDefinition(0 - steps[1], steps[0]);
+            corners[3] = new PointDefinition(0 - steps[1], steps[0] - steps[2]);
+
+            boundaryDefinitions[0].update(corners[0].x, corners[0].y, corners[1].x, corners[1].y);
+            boundaryDefinitions[1].update(corners[1].x, corners[1].y, corners[2].x, corners[2].y);
+            boundaryDefinitions[2].update(corners[2].x, corners[2].y, corners[3].x, corners[3].y);
+
+            if (corners[3].y >= 0)
             {
-                put("North", Arrays.asList("West"));
-                put("West", Arrays.asList("South"));
-                put("South", Arrays.asList("East"));
-                put("East", Arrays.asList("North"));
+                outbound = false;
+                if (boundaryDefinitions[0].doesLineCross(corners[3].x, corners[3].y, corners[3].x + steps[3], corners[3].y))
+                {
+                    return true;
+                }
             }
-        };
-        Map<String, List<String>> movementToOverlapMap = new HashMap<String, List<String>>()
-        {
+
+            if (steps.length == 4)
             {
-                put("West", Arrays.asList("West", "East"));
-                put("North", Arrays.asList("South", "North"));
-                put("East", Arrays.asList("West", "East"));
-                put("South", Arrays.asList("South", "North"));
+                return false;
             }
-        };
-        Map<String, BoundaryDefinition> boundaryDefinitionMap = new HashMap<String, BoundaryDefinition>()
-        {
+
+            else if (fallsInBetween(corners[3].x + steps[3], boundaryDefinitions[1].startX, boundaryDefinitions[1].endX))
             {
-                put("North", new BoundaryDefinition());
-                put("South", new BoundaryDefinition());
-                put("East", new BoundaryDefinition());
-                put("West", new BoundaryDefinition());
+                outbound = false;
             }
-        };
+            if (corners[3].x + steps[3] == 0)
+            {
+                boundaryDefinitions[1].update(0, 0, corners[3].x, corners[3].y);
+            }
+
+            boundaryDefinitions[3].update(corners[3].x, corners[3].y, corners[3].x + steps[3], corners[3].y);
+            currentX = corners[3].x + steps[3];
+            currentY = corners[3].y;
+
+            for (int i = 4; i < steps.length; i++)
+            {
+                if (checkIfCrossAndUpdate(steps[i]))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
 
         boolean checkIfCrossAndUpdate(int steps)
         {
             int toBeEndX;
             int toBeEndY;
-
             final String direction = directions[movementCounter % 4];
+
             if ("North".equals(direction))
             {
                 toBeEndX = currentX;
@@ -106,48 +128,115 @@ public class Solution
                 toBeEndY = currentY;
             }
 
-            boolean overLaps = movementToOverlapMap.get(direction)
-                .stream()
-                .anyMatch(new Predicate<String>()
-                {
-                    @Override
-                    public boolean test(String s)
-                    {
-                        boolean overlaps = boundaryDefinitionMap.get(s).doLineOverLap(currentX, currentY, toBeEndX, toBeEndY);
-                        //System.out.println("Overlap::"+s+"::On::"+direction+"::"+overlaps);
-                        return overlaps;
-                    }
-                });
-            if (overLaps)
+            if (outbound)
             {
-                return true;
+                if ("East".equals(direction))
+                {
+                    if (fallsInBetween(toBeEndX, boundaryDefinitions[3].startX, boundaryDefinitions[3].endX))
+                    {
+                        boundaryDefinitions[1].updateSelfWith(boundaryDefinitions[3]);
+                        outbound = false;
+                    }
+                    else if (fallsInBetween(toBeEndX, boundaryDefinitions[1].startX, boundaryDefinitions[1].endX))
+                    {
+                        outbound = false;
+                    }
+                    boundaryDefinitions[3].update(currentX, currentY, toBeEndX, toBeEndY);
+                }
+                else if ("North".equals(direction))
+                {
+                    if (fallsInBetween(toBeEndY, boundaryDefinitions[0].startY, boundaryDefinitions[0].endY))
+                    {
+                        boundaryDefinitions[2].updateSelfWith(boundaryDefinitions[0]);
+                        outbound = false;
+                    }
+                    else if (fallsInBetween(toBeEndY, boundaryDefinitions[2].startY, boundaryDefinitions[2].endY))
+                    {
+                        outbound = false;
+                    }
+                    boundaryDefinitions[0].update(currentX, currentY, toBeEndX, toBeEndY);
+                }
+                else if ("West".equals(direction))
+                {
+                    if (fallsInBetween(toBeEndX, boundaryDefinitions[1].startX, boundaryDefinitions[1].endX))
+                    {
+                        boundaryDefinitions[3].updateSelfWith(boundaryDefinitions[1]);
+                        outbound = false;
+                    }
+                    else if (fallsInBetween(toBeEndX, boundaryDefinitions[3].startX, boundaryDefinitions[3].endX))
+                    {
+                        outbound = false;
+                    }
+                    boundaryDefinitions[1].update(currentX, currentY, toBeEndX, toBeEndY);
+                }
+                else if ("South".equals(direction))
+                {
+                    if (fallsInBetween(toBeEndY, boundaryDefinitions[2].startY, boundaryDefinitions[2].endY))
+                    {
+                        boundaryDefinitions[0].updateSelfWith(boundaryDefinitions[2]);
+                        outbound = false;
+                    }
+                    else if (fallsInBetween(toBeEndY, boundaryDefinitions[0].startY, boundaryDefinitions[0].endY))
+                    {
+                        outbound = false;
+                    }
+                    boundaryDefinitions[2].update(currentX, currentY, toBeEndX, toBeEndY);
+                }
+            }
+            else
+            {
+                if ("East".equals(direction))
+                {
+                    if (boundaryDefinitions[0].doesLineCross(currentX, currentY, toBeEndX, toBeEndY))
+                    {
+                        return true;
+                    }
+                    boundaryDefinitions[3].update(currentX, currentY, toBeEndX, toBeEndY);
+                }
+                else if ("North".equals(direction))
+                {
+                    if (boundaryDefinitions[1].doesLineCross(currentX, currentY, toBeEndX, toBeEndY))
+                    {
+                        return true;
+                    }
+                    boundaryDefinitions[0].update(currentX, currentY, toBeEndX, toBeEndY);
+                }
+                else if ("West".equals(direction))
+                {
+                    if (boundaryDefinitions[2].doesLineCross(currentX, currentY, toBeEndX, toBeEndY))
+                    {
+                        return true;
+                    }
+                    boundaryDefinitions[1].update(currentX, currentY, toBeEndX, toBeEndY);
+                }
+                else if ("South".equals(direction))
+                {
+                    if (boundaryDefinitions[3].doesLineCross(currentX, currentY, toBeEndX, toBeEndY))
+                    {
+                        return true;
+                    }
+                    boundaryDefinitions[2].update(currentX, currentY, toBeEndX, toBeEndY);
+                }
             }
 
-            boolean crosses = movementToObstractionMap.get(direction)
-                .stream()
-                .anyMatch(new Predicate<String>()
-                {
-                    @Override
-                    public boolean test(String s)
-                    {
-                        boolean cross = boundaryDefinitionMap.get(s).doesLineCross(currentX, currentY, toBeEndX, toBeEndY);
-                        //System.out.println("Cross::"+s+"::On::"+direction+"::"+cross);
-                        return cross;
-                    }
-                });
-
-            if (crosses)
-            {
-                return true;
-            }
-
-            boundaryDefinitionMap.get(direction).update(currentX, currentY, toBeEndX, toBeEndY);
             currentX = toBeEndX;
             currentY = toBeEndY;
 
             ++movementCounter;
 
             return false;
+        }
+    }
+
+    private static class PointDefinition
+    {
+        int x;
+        int y;
+
+        PointDefinition(int x, int y)
+        {
+            this.x = x;
+            this.y = y;
         }
     }
 
@@ -168,43 +257,12 @@ public class Solution
             this.initialised = true;
         }
 
-        boolean doLineOverLap(int otherLineStartX, int otherLineStartY, int otherLineEndX, int otherLineEndY)
+        void updateSelfWith(BoundaryDefinition otherBoundaryDefinition)
         {
-            if (!initialised)
-            {
-                return false;
-            }
-            if (startX == endX)//vertical
-            {
-                if (otherLineStartX != otherLineEndX)
-                {
-                    return false;
-                }
-                if (startX != otherLineStartX)
-                {
-                    return false;
-                }
-                if (fallsInBetween(startY, otherLineStartY, otherLineEndY) || fallsInBetween(endY, otherLineStartY, otherLineEndY))
-                {
-                    return true;
-                }
-            }
-            else //horizontal
-            {
-                if (otherLineStartY != otherLineEndY)
-                {
-                    return false;
-                }
-                if (startY != otherLineStartY)
-                {
-                    return false;
-                }
-                if (fallsInBetween(startX, otherLineStartX, otherLineEndX) || fallsInBetween(endX, otherLineStartX, otherLineEndX))
-                {
-                    return true;
-                }
-            }
-            return false;
+            this.startX = otherBoundaryDefinition.startX;
+            this.startY = otherBoundaryDefinition.startY;
+            this.endX = otherBoundaryDefinition.endX;
+            this.endY = otherBoundaryDefinition.endY;
         }
 
         boolean doesLineCross(int otherLineStartX, int otherLineStartY, int otherLineEndX, int otherLineEndY)
@@ -221,10 +279,7 @@ public class Solution
                 }
                 if (fallsInBetween(startX, otherLineStartX, otherLineEndX))
                 {
-                    if (fallsInBetween(otherLineStartY, startY, endY))
-                    {
-                        return true;
-                    }
+                    return fallsInBetween(otherLineStartY, startY, endY);
                 }
             }
             else //horizontal
@@ -235,10 +290,7 @@ public class Solution
                 }
                 if (fallsInBetween(startY, otherLineStartY, otherLineEndY))
                 {
-                    if (fallsInBetween(otherLineStartX, startX, endX))
-                    {
-                        return true;
-                    }
+                    return fallsInBetween(otherLineStartX, startX, endX);
                 }
             }
             return false;
