@@ -17,32 +17,24 @@ public class Solution {
         {
             if (charArray[i-1]==charArray[i])
             {
-                PalindromeContainer palindromeContainer = expandPalindrome(charArray, i - 1, i);
-                if(palindromeContainer.getLength()>longestPalindromeContainer.getLength())
-                {
-                    longestPalindromeContainer = palindromeContainer;
-                }
+                expandPalindrome(charArray, i - 1, i, longestPalindromeContainer);
             }
         }
         for (int i=1;i<length-1;i++)
         {
             if (charArray[i-1]==charArray[i+1])
             {
-                PalindromeContainer palindromeContainer = expandPalindrome(charArray, i - 1, i+1);
-                if(palindromeContainer.getLength()>longestPalindromeContainer.getLength())
-                {
-                    longestPalindromeContainer = palindromeContainer;
-                }
+                expandPalindrome(charArray, i - 1, i+1, longestPalindromeContainer);
             }
         }
         return s.substring(longestPalindromeContainer.startIndex, longestPalindromeContainer.endIndex);
     }
 
-    private PalindromeContainer expandPalindrome(char[] charArray, int startIndex, int endIndex)
+    private void expandPalindrome(char[] charArray, int startIndex, int endIndex, PalindromeContainer palindromeContainer)
     {
         if (charArray[startIndex]!=charArray[endIndex])
         {
-            return new PalindromeContainer(endIndex-1,endIndex);
+            palindromeContainer.updateIfBetter(endIndex-1, endIndex);
         }
         while (startIndex>0 && endIndex<charArray.length-1)
         {
@@ -52,16 +44,17 @@ public class Solution {
                 ++endIndex;
             }else
             {
-                return new PalindromeContainer(startIndex, endIndex+1);
+                palindromeContainer.updateIfBetter(startIndex, endIndex+1);
+                return;
             }
         }
-        return new PalindromeContainer(startIndex, endIndex+1);
+        palindromeContainer.updateIfBetter(startIndex, endIndex+1);
     }
 
     public static class PalindromeContainer
     {
-        private final int startIndex;
-        private final int endIndex;
+        private int startIndex;
+        private int endIndex;
 
         public PalindromeContainer(int startIndex, int endIndex) {
             this.startIndex = startIndex;
@@ -71,6 +64,15 @@ public class Solution {
         public int getLength()
         {
             return (endIndex-startIndex);
+        }
+
+        public void updateIfBetter(int startIndex, int endIndex)
+        {
+            if ((endIndex-startIndex) > this.getLength())
+            {
+                this.startIndex=startIndex;
+                this.endIndex = endIndex;
+            }
         }
     }
 
