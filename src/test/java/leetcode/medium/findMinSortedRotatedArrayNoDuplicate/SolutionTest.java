@@ -1,4 +1,4 @@
-package leetcode.hard.findMinSortedRotatedArrayNoDuplicate;
+package leetcode.medium.findMinSortedRotatedArrayNoDuplicate;
 
 import org.junit.Test;
 

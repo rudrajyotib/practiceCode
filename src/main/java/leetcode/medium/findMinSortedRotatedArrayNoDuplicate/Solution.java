@@ -1,4 +1,4 @@
-package leetcode.hard.findMinSortedRotatedArrayNoDuplicate;
+package leetcode.medium.findMinSortedRotatedArrayNoDuplicate;
 
 //https://leetcode.com/problems/find-minimum-in-rotated-sorted-array/
 
