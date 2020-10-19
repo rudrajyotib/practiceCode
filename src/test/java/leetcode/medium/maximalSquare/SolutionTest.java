@@ -56,7 +56,7 @@ public class SolutionTest {
     @Test
     public void evaluateSingleTestCase()
     {
-        int testIndex = 7;
+        int testIndex = 6;
         Solution solution = new Solution();
         assertThat(String.format("Test case %d failed", testIndex+1),
                 solution.maximalSquare(testCasesInputs.get(testIndex)),
