@@ -45,7 +45,7 @@ public class Solution
     public static class Node
     {
         private final int nodeId;
-        private Node parent;
+        private final Node parent;
         private final LinkedList<Node> children;
         private int size = 0;
 
